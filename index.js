@@ -1,46 +1,44 @@
-import express from "express";
-import makeWASocket, { useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
-import P from "pino";
-import fs from "fs";
-import path from "path";
-import qrcode from "qrcode";
+const express = require("express");
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
+const fs = require("fs");
+const path = require("path");
+const pino = require("pino");
+const qrcode = require("qrcode");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 let sock;
 let qrCodeData = "";
 let botActive = true;
-const adminNumbers = ["6282244877433"]; // <== GANTI DENGAN NOMOR ADMIN (tanpa +)
+const adminNumbers = ["6282244877433"]; // ganti nomormu di sini
 
-const ensureDirs = () => {
-  ["./data/media", "./data/html"].forEach(d => {
-    if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
-  });
-};
-ensureDirs();
+// pastikan folder ada
+["./data", "./data/auth", "./data/media", "./data/html"].forEach((d) => {
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+});
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState("./data/auth");
   sock = makeWASocket({
     auth: state,
     printQRInTerminal: false,
-    logger: P({ level: "silent" })
+    logger: pino({ level: "silent" }),
   });
 
   sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect, qr } = update;
     if (qr) {
       qrCodeData = await qrcode.toDataURL(qr);
-      console.log("QR updated!");
+      console.log("📱 QR diperbarui, buka /qr untuk scan");
     }
     if (connection === "close") {
       const reason = lastDisconnect?.error?.output?.statusCode;
       if (reason !== DisconnectReason.loggedOut) {
-        console.log("Reconnecting...");
+        console.log("🔄 Reconnect...");
         startBot();
-      }
+      } else console.log("❌ Logged out, scan ulang QR!");
     } else if (connection === "open") {
-      console.log("✅ Bot connected");
+      console.log("✅ Bot tersambung ke WhatsApp");
       qrCodeData = "";
     }
   });
@@ -55,7 +53,9 @@ async function startBot() {
     // Simpan pesan sebagai HTML
     const htmlPath = `./data/html/${Date.now()}.html`;
     fs.writeFileSync(htmlPath, `<pre>${JSON.stringify(msg, null, 2)}</pre>`);
-    setTimeout(() => fs.unlinkSync(htmlPath), 2 * 60 * 60 * 1000);
+    setTimeout(() => {
+      if (fs.existsSync(htmlPath)) fs.unlinkSync(htmlPath);
+    }, 2 * 60 * 60 * 1000);
 
     // Simpan media
     if (msg.message.imageMessage) {
@@ -77,15 +77,15 @@ async function startBot() {
     }
   });
 
-  sock.ev.on("call", async (call) => {
-    console.log("Ignored incoming call:", call.from);
-  });
+  // Abaikan panggilan
+  sock.ev.on("call", (call) => console.log("📵 Panggilan diabaikan:", call.from));
 
   sock.ev.on("creds.update", saveCreds);
 }
 
-app.get("/", (req, res) => res.send("✅ WA Anti Delete Bot Aktif!"));
-app.get("/qr", (req, res) => {
+// endpoint web
+app.get("/", (_, res) => res.send("✅ WA Anti Delete Bot Aktif!"));
+app.get("/qr", (_, res) => {
   if (!qrCodeData) return res.send("✅ Sudah login / tidak ada QR saat ini");
   const img = Buffer.from(qrCodeData.split(",")[1], "base64");
   res.writeHead(200, { "Content-Type": "image/png" });
@@ -93,8 +93,9 @@ app.get("/qr", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server on port ${PORT}`);
+  console.log("🚀 Server aktif di port", PORT);
   startBot();
 });
 
+// jaga Railway tetap hidup
 setInterval(() => {}, 60 * 1000);
