@@ -1,19 +1,19 @@
 {
   "name": "wa-antidelete-bot",
   "version": "2.0.0",
-  "description": "WhatsApp anti-delete bot lengkap dengan admin control, auto reboot, single tick, dan ignore call.",
+  "description": "WhatsApp anti-delete bot full feature, 24 jam, auto reboot, dan admin control.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js",
-    "postinstall": "echo 'PORT=3000' >> .env"
+    "postinstall": "echo 'PORT=8080' >> .env"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.5",
     "express": "^4.18.2",
     "mime-types": "^2.1.35",
     "pino": "^9.2.0",
-    "qrcode": "^1.5.3",
-    "qrcode-terminal": "^0.12.0"
+    "qrcode": "^1.5.3"
   },
   "engines": {
     "node": ">=18"
