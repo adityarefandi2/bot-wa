@@ -4,7 +4,8 @@
   "description": "WhatsApp anti-delete bot lengkap dengan admin control, auto reboot, single tick, dan ignore call.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "postinstall": "echo 'PORT=3000' >> .env"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.5",
@@ -13,5 +14,8 @@
     "pino": "^9.2.0",
     "qrcode": "^1.5.3",
     "qrcode-terminal": "^0.12.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
